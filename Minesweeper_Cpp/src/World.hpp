@@ -37,7 +37,7 @@ private:
     // Tile structure
     struct Tile{
         bool mine       = false; // has Bomb or nor
-        bool uncovered  = true; // uncovered or nor
+        bool uncovered  = false; // uncovered or nor
         bool flag       = false; // flag marker
         int  neighbour  = 0;     // records number of bombs around
     };
