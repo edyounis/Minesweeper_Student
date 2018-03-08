@@ -57,8 +57,8 @@ private:
     Agent::Action	lastAction;	// The last action the agent made
 
     // Board Variables
-    size_t	colDimension;	// The number of columns the game board has
-    size_t	rowDimension;	// The number of rows the game board has
+    int	colDimension;	// The number of columns the game board has
+    int	rowDimension;	// The number of rows the game board has
     Tile**	board;			// The game board
     int     mineNums;       // Number of mines the game board has
 
@@ -67,20 +67,20 @@ private:
     void	        addFeatures ( std::ifstream &file );	// add specified features according the file to the board
     void 	        addMine 		(   );      // add mine to game board
     void            addMineCount    (   );      // adding mine counter according to neighbour
-    void            addNeighbour    ( size_t c, size_t r ); // helper function for addMineCount
+    void            addNeighbour    ( int c, int r ); // helper function for addMineCount
     void            uncoverAll      (   );
     Agent::Action   genFirstAxis    (   );      // generate first move axis
-    bool            isInBounds      ( size_t c, size_t r );  // check bound
+    bool            isInBounds      ( int c, int r );  // check bound
 
     // World printing functions
     void	        printWorldInfo	(   );
     void            printBoardInfo  (   );
-    void            printTileInfo   ( size_t c, size_t r );
+    void            printTileInfo   ( int c, int r );
     void	        printAgentInfo  (   );
     void	        printActionInfo	(   );
 
     // Helper Functions
-    size_t	        randomInt	( size_t limit ); // Randomly generate a int in the range [0, limit)
+    int	        randomInt	( int limit ); // Randomly generate a int in the range [0, limit)
 
 };
 

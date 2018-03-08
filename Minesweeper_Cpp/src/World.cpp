@@ -2,6 +2,9 @@
 // FILE:        World.cpp
 //
 // Created by Jian Li  on 2/19/18.
+// Edit history: 2/21 World.cpp: default board generation, print functions, basic run engine function
+//               3/5  World.cpp: file input board generation, first move generation function, agent initialized, run engine function returning score
+//               3/7  refine first move generation function and addMine function
 //
 // DESCRIPTION: This file contains the World class, which is responsible
 //              for everything game related.
@@ -25,7 +28,7 @@ World::World( bool _debug, bool _randomAI, bool _manualAI, string filename )
     // World Initialization
     // if ture: file provided
     // if false: file not provided, board with default size and random feature
-    if ( filename != "" )
+    if ( !filename.empty() )
     {
         //cout<< "open file" << endl;  debug use
         // open file
@@ -40,7 +43,7 @@ World::World( bool _debug, bool _randomAI, bool _manualAI, string filename )
         for ( int index = 0; index < colDimension; ++index )
             board[index] = new Tile[rowDimension];
 
-        // set feature according to the file
+
         addFeatures ( file );
         file.close();
     }
@@ -53,19 +56,20 @@ World::World( bool _debug, bool _randomAI, bool _manualAI, string filename )
         for ( int index = 0; index < colDimension; ++index )
             board[index] = new Tile[rowDimension];
 
-        // Adding mines, adding mine counter according to neighbour, uncover first file
+
+        lastAction   = genFirstAxis();
+        agentX       = lastAction.x;
+        agentY       = lastAction.y;
+
+
         addFeatures();
     }
 
     // Agent Initialization
     score           = 0;
     countCover      = rowDimension * colDimension;
-    flagLeft       =  10;  // temporary use
-    // Generate random first move axis: in bound, has no mine, no neighbour has mine
-    // return agent for first move coordinates info
-    lastAction   = genFirstAxis();
-    agentX       = lastAction.x;
-    agentY       = lastAction.y;
+    flagLeft       =  mineNums;  // temporary use
+
 
     if ( _randomAI )
         agent = new RandomAI();
@@ -162,9 +166,10 @@ int World::run()
 // =				World Generation Functions
 // ===============================================================
 void World::addFeatures(    )
+// Adding mines, adding mine counter according to neighbour, uncover first file
 {
 
-    // Generate mine: mineNums times, in bound, no mine before -> [mc][mr]mine = true
+
     addMine();
 
     // Generate number of mines around
@@ -172,6 +177,7 @@ void World::addFeatures(    )
 }
 
 void World::addFeatures( std::ifstream &file )
+// set feature according to the file
 {
 
     int r = rowDimension;
@@ -182,7 +188,7 @@ void World::addFeatures( std::ifstream &file )
     {
         --r;
 
-        for ( size_t c = 0; c < colDimension; ++c )
+        for ( int c = 0; c < colDimension; ++c )
         {
             file >> mine;
 
@@ -196,18 +202,40 @@ void World::addFeatures( std::ifstream &file )
         }
     }
 
-    // Generate number of mines around
+
     addMineCount();
     // printBoardInfo();  debug use
 }
 
-void World::addMine(    )
+Agent::Action World::genFirstAxis(  )
+// Generate random first move axis: in bound, has no mine, no neighbour has mine
+// return agent for first move coordinates info
 {
+    int fc = randomInt( colDimension );
+    int fr = randomInt( rowDimension );
+    //while ( !isInBounds( fc, fr ) || board[fc][fr].mine || board[fc][fr].neighbour) //potentially wrong for no non_zero neighbour
+    //while ( !isInBounds( fc, fr ) || board[fc][fr].mine)
+    while ( !isInBounds( fc, fr ))
+    {
+        fc = randomInt( colDimension );
+        fr = randomInt( rowDimension );
+    }
+    board[fc][fr].uncovered = true;
 
+    Agent::Action firstMove = {Agent::UNCOVER, (int) fc , (int )fr};
+    return firstMove;
+}
+
+void World::addMine(    )
+// Generate mine: mineNums times, in bound, no mine before -> [mc][mr]mine = true,
+// not adding mine around and on the first move uncover tile
+{
+    cout << agentX << agentY << endl;
     for (int m = 0; m < mineNums; ++m){
-        size_t mc = randomInt( colDimension );
-        size_t mr = randomInt( rowDimension );
-        while ( !isInBounds( mc, mr ) || board[mc][mr].mine ) {
+        int mc = randomInt( colDimension );
+        int mr = randomInt( rowDimension );
+        while ( !isInBounds( mc, mr ) || board[mc][mr].mine || ((agentX - 2 < mc && mc < agentX + 2) && (agentY - 2 < mr && mr < agentY + 2)) )
+        {
             mc = randomInt( colDimension );
             mr = randomInt( rowDimension );
         }
@@ -216,6 +244,7 @@ void World::addMine(    )
 }
 
 void World::addMineCount(   )
+// Generate number of mines around
 {
     for ( int c = 0; c < colDimension; ++c ){
         for ( int r = 0; r < rowDimension; ++r ){
@@ -225,7 +254,7 @@ void World::addMineCount(   )
     }
 }
 
-void World::addNeighbour( size_t c, size_t r)
+void World::addNeighbour( int c, int r)
 {
     // helper function for addMineCount
     // iterate 8 neighbours around a tile, and increment neighbour if there is mine
@@ -235,29 +264,12 @@ void World::addNeighbour( size_t c, size_t r)
                       {1, 1}, {1, 0}, {1, -1} };
 
     for (int *i : dir) {
-        size_t nc = c + i[0];
-        size_t nr = r + i[1];
+        int nc = c + i[0];
+        int nr = r + i[1];
         if ( isInBounds( nc, nr ) && board[nc][nr].mine ){
             board[c][r].neighbour++;
         }
     }
-}
-
-Agent::Action World::genFirstAxis(  )
-{
-
-    size_t fc = randomInt( colDimension );
-    size_t fr = randomInt( rowDimension );
-    //while ( !isInBounds( fc, fr ) || board[fc][fr].mine || board[fc][fr].neighbour) //potentially wrong for no non_zero neighbour
-    while ( !isInBounds( fc, fr ) || board[fc][fr].mine)
-    {
-        fc = randomInt( colDimension );
-        fr = randomInt( rowDimension );
-    }
-    board[fc][fr].uncovered = true;
-
-    Agent::Action firstMove = {Agent::UNCOVER, (int) fc , (int )fr};
-    return firstMove;
 }
 
 void World::uncoverAll() {
@@ -269,9 +281,9 @@ void World::uncoverAll() {
 }
 
 
-bool World::isInBounds ( size_t c, size_t r )
+bool World::isInBounds ( int c, int r )
 {
-    return ( c < colDimension && r < rowDimension );
+    return ( 0 <= c && c < colDimension && 0 <= r && r < rowDimension );
 }
 
 // ===============================================================
@@ -286,16 +298,20 @@ void World::printWorldInfo(     )
 
 void World::printBoardInfo(     )
 {
-
+    cout << " ";
+    for (int c = 0; c < colDimension; ++c)
+        cout << setw(8) << c;
+    cout << endl;
     for ( int r = rowDimension-1; r >= 0; --r )
     {
-        for ( size_t c = 0; c < colDimension; ++c )
+        cout << r;
+        for ( int c = 0; c < colDimension; ++c )
             printTileInfo ( c, r );
         cout << endl << endl;
     }
 }
 
-void World::printTileInfo( size_t c, size_t r )
+void World::printTileInfo( int c, int r )
 {
 
     string tileString;
@@ -316,7 +332,7 @@ void World::printTileInfo( size_t c, size_t r )
     cout << setw(8) << tileString;
 }
 
-void World::printAgentInfo(void)
+void World::printAgentInfo()
 {
     cout << "Score: "       << score    << endl;
     cout << "The agent has " << flagLeft << " flag remaining" << endl;
@@ -354,7 +370,7 @@ void World::printActionInfo()
 // =					Helper Functions
 // ===============================================================
 
-size_t World::randomInt ( size_t limit )
+int World::randomInt ( int limit )
 {
     return rand() % limit;
 }
