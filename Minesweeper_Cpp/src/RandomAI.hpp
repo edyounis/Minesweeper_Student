@@ -7,24 +7,32 @@
 
 #include <cstdlib>
 #include "Agent.hpp"
+#include<iostream>
 
 class RandomAI : public Agent
 {
 public:
 
-    Action getAction(bool mine, int neighbourMine, int flagLeft, int uncoverLeft) override
+    RandomAI ( int _rowDimension, int _colDimension, int _totalMines, int _agentX, int _agentY){
+        rowDimension = _rowDimension;
+        colDimension = _colDimension;
+        totalMines   = _totalMines;
+    };
+
+    Action getAction( int number) override
     {
-        return actions [ rand() % 4 ];  //??
+        return{actions[rand() % 4], rand() % rowDimension, rand() % colDimension};
     }
 
 private:
 
-    const Action actions[4] =
+    const Action_type actions[4] =
             {
+                    LEAVE,
                     UNCOVER,
                     FLAG,
                     UNFLAG,
-                    LEAVE,
             };
+
 };
 #endif //MINE_SWEEPER_CPP_SHELL_RANDOMAI_HPP

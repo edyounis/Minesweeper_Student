@@ -66,17 +66,16 @@ World::World( bool _debug, bool _randomAI, bool _manualAI, string filename )
     }
 
     // Agent Initialization
-    score           = 0;
-    countCover      = rowDimension * colDimension;
-    flagLeft       =  mineNums;  // temporary use
-
+    score      = 0;
+    countCover = rowDimension * colDimension;
+    flagLeft   = mineNums;  // temporary use
 
     if ( _randomAI )
-        agent = new RandomAI();
-    if ( _manualAI )
-        agent = new ManualAI();
+        agent = new RandomAI( rowDimension, colDimension, mineNums, agentX, agentY );
+    else if ( _manualAI )
+        agent = new ManualAI( rowDimension, colDimension, mineNums, agentX, agentY );
     else
-        agent = new MyAI();
+        agent = new MyAI( rowDimension, colDimension, mineNums, agentX, agentY );
 
 }
 
@@ -93,6 +92,7 @@ World::~World() {
 
 int World::run()
 {
+    int flagScore = 0;
     while ( score >= -1000 )
     {
         if ( debug || manualAI )
@@ -109,42 +109,45 @@ int World::run()
         }
 
         // Get the move
-        lastAction = agent->getAction(board[agentX][agentY].mine, board[agentX][agentY].neighbour, flagLeft, countCover);
+        lastAction = agent->getAction( board[agentX][agentY].neighbour );
         agentX       = lastAction.x;
         agentY       = lastAction.y;
 
         // Make the move
+//        --score;
         switch ( lastAction.action )
         {
             case Agent::LEAVE:
                 if (countCover == mineNums)
                     score += 1000; // temporary use
                 uncoverAll();
-
+                score += flagScore;
                 return score;
             case Agent::UNCOVER:
-                board[agentX][agentY].uncovered = true; // warning for uncovered tile to be uncovered again?
                 if (board[agentX][agentY].mine)     // invalid tile
                 {
                     score -= 1000;
                     uncoverAll();
                     return score;
                 }
-                else
+
+                else if (!board[agentX][agentY].uncovered)
                 {
+                    board[agentX][agentY].uncovered = true; // warning for known tile to be uncovered again?
                     ++score;
+                    --countCover;
                 }
-                --countCover;
+
                 break;
             case Agent::FLAG:
-                if (flagLeft) // warning for out of use
+                if (flagLeft)
                 {
                     board[agentX][agentY].flag = true;
                     --flagLeft;
                     if (board[agentX][agentY].mine)
-                        ++score;
+                        ++flagScore;
                     else
-                        --score;
+                        --flagScore;
                     break;
                 }
 
@@ -152,12 +155,13 @@ int World::run()
                 board[agentX][agentY].flag = false;
                 ++flagLeft;
                 if (board[agentX][agentY].mine)
-                    --score;
+                    --flagScore;
                 else
-                    ++score;
+                    ++flagScore;
                 break;
         }
     }
+
     return score;
 }
 
@@ -168,10 +172,7 @@ int World::run()
 void World::addFeatures(    )
 // Adding mines, adding mine counter according to neighbour, uncover first file
 {
-
-
     addMine();
-
     // Generate number of mines around
     addMineCount();
 }
@@ -230,7 +231,6 @@ void World::addMine(    )
 // Generate mine: mineNums times, in bound, no mine before -> [mc][mr]mine = true,
 // not adding mine around and on the first move uncover tile
 {
-    cout << agentX << agentY << endl;
     for (int m = 0; m < mineNums; ++m){
         int mc = randomInt( colDimension );
         int mr = randomInt( rowDimension );
@@ -278,6 +278,7 @@ void World::uncoverAll() {
         for ( int r = 0; r < rowDimension; ++r )
             board[c][r].uncovered = true;
     }
+    printWorldInfo();
 }
 
 
