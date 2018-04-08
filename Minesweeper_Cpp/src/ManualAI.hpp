@@ -11,11 +11,18 @@
 class ManualAI : public Agent
 {
 public:
-    Action getAction(bool mine, int neighbourMine, int flagLeft, int uncoverLeft) override
+
+    ManualAI ( int _rowDimension, int _colDimension, int _totalMines, int _agentX, int _agentY ){
+        rowDimension = _rowDimension;
+        colDimension = _colDimension;
+        totalMines   = _totalMines;
+    };
+
+    Action getAction( int number ) override
     {
         // Print Command Menu
-        std::cout << "Press 'L' to 'Leave'  'U' to 'Uncover'" << std::endl;
-        std::cout << "Press 'F' to 'Flag'   'N' to 'Unflag'" << std::endl;
+        std::cout << "---------------- Available Actions ----------------" << std::endl;
+        std::cout << "L: leave game   U: uncover tile   F: flag   N: unflag" << std::endl;
 
         Action_type new_action = Action_type ::LEAVE;
         char input_action;
@@ -23,7 +30,7 @@ public:
         int input_y = -1; // y = row
 
         // get action from input
-        std::cout << "Please press a action: ";
+        std::cout << "Enter a action:  ";
         while (true)
         {
             std::cin >> input_action;
@@ -35,21 +42,18 @@ public:
             else if (input_action == 'U')
             {
                 new_action = UNCOVER;
-                --uncoverLeft;
                 break;
             }
 
             else if (input_action == 'F')
             {
                 new_action = FLAG;
-                --flagLeft;
                 break;
             }
 
             else if (input_action == 'N')
             {
                 new_action = UNFLAG;
-                ++flagLeft;
                 break;
             }
 
@@ -60,8 +64,15 @@ public:
         // get coordinates from input
         if (new_action != LEAVE)
         {
-            std::cout << "Please enter coordinates (x y): ";
-            while (!(std::cin >> input_x) || input_x < 0 || !(std::cin >> input_y) || input_y < 0)
+            std::cout << "Enter X: ";
+            while (!(std::cin >> input_x) || input_x < 0 || input_x > rowDimension)
+            {
+                std::cout << "Invalid coordinates specified, please enter again: ";
+                std::cin.clear();
+                std::cin.ignore(INT_MAX, '\n');
+            }
+            std::cout << "Enter Y: ";
+            while (!(std::cin >> input_y) || input_y < 0 || input_y > colDimension)
             {
                 std::cout << "Invalid coordinates specified, please enter again: ";
                 std::cin.clear();
@@ -69,8 +80,7 @@ public:
             }
         }
 
-        Action action = {new_action, input_x, input_y};
-        return action;
+        return {new_action, input_x, input_y};
     };
 };
 

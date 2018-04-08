@@ -22,7 +22,7 @@ int main( int argc, char *argv[] )
     srand( time ( NULL ) );
 
     if ( argc == 1 ){
-        World world;
+        World world(false, std::string(), std::string());
         int score = world.run();
         cout << "Your agent scored: " << score << endl;
         return 0;
@@ -31,8 +31,7 @@ int main( int argc, char *argv[] )
     // Important Variables
     bool 	debug        = false;
     bool	verbose      = false;
-    bool 	randomAI     = false;
-    bool 	manualAI      = false;
+    string  aiType       = "MyAI";
     bool 	folder       = false;
     string	worldFile    = "";
     string	outputFile   = "";
@@ -44,47 +43,64 @@ int main( int argc, char *argv[] )
         // Parse Options
         for (int index = 1; index < firstToken.size(); ++index)
         {
-            switch (firstToken[index])
+//            switch (firstToken[index])
+//            {
+//                case '-':
+//                    break;
+//
+//                case 'f':
+//                case 'F':
+//                    folder = true;
+//                    break;
+//
+//                case 'v':
+//                case 'V':
+//                    verbose = true;
+//                    break;
+//
+//                case 'r':
+//                case 'R':
+//                    randomAI = true;
+//                    break;
+//
+//                case 'm':
+//                case 'M':
+//                    manualAI = true;
+//                    break;
+//
+//                case 'd':
+//                case 'D':
+//                    debug = true;
+//                    break;
+//
+//                default:
+//                    return 0;
+//            }
+            // If both AI's on, turn one off and let the user know.
+            if ( firstToken[index] == '-' )
+                    continue;
+            if ( firstToken[index] == 'f' || firstToken[index] =='F' )
+                folder = true;
+            if ( firstToken[index] == 'v' || firstToken[index] =='V' )
+                verbose = true;
+            if ( firstToken[index] == 'r' || firstToken[index] == 'R' )
             {
-                case '-':
-                    break;
-
-                case 'f':
-                case 'F':
-                    folder = true;
-                    break;
-
-                case 'v':
-                case 'V':
-                    verbose = true;
-                    break;
-
-                case 'r':
-                case 'R':
-                    randomAI = true;
-                    break;
-
-                case 'm':
-                case 'M':
-                    manualAI = true;
-                    break;
-
-                case 'd':
-                case 'D':
-                    debug = true;
-                    break;
-
-                default:
-                    return 0;
+                if ( aiType == "manualAI" )
+                    cout << "[WARNING] Manual AI and Random AI both on;"" Manual AI was turned off." << endl;
+                aiType = "randomAI";
             }
+            if ( firstToken[index] == 'm' || firstToken[index] == 'M' )
+            {
+                if ( aiType == "randomAI" )
+                    cout << "[WARNING] Manual AI and Random AI both on; Manual AI was turned off." << endl;
+                else
+                    aiType = "manualAI";
+            }
+            if (firstToken[index] == 'd' || firstToken[index] == 'D')
+                debug = true;
+
         }
 
-        // If both AI's on, turn one off and let the user know.
-        if ( randomAI && manualAI )
-        {
-            manualAI = false;
-            cout << "[WARNING] Manual AI and Random AI both on; Manual AI was turned off." << endl;
-        }
 
         if ( argc >= 3 )
             worldFile = argv[2];
@@ -104,7 +120,7 @@ int main( int argc, char *argv[] )
     {
         if ( folder )
             cout << "[WARNING] No folder specified; running on a random world." << endl;
-        World world ( debug, randomAI, manualAI );
+        World world(debug, aiType, std::string());
         int score = world.run();
         cout << "The agent scored: " << score << endl;
         return 0;
@@ -138,7 +154,7 @@ int main( int argc, char *argv[] )
 
             int score;
             try {
-                World world(debug, randomAI, manualAI, individualWorldFile);
+                World world(debug, aiType, individualWorldFile);
                 score = world.run();
             }
             catch (...) {
@@ -169,7 +185,7 @@ int main( int argc, char *argv[] )
         if ( verbose )
             cout << "Running world: " << worldFile << endl;
 
-        World world ( debug, randomAI, manualAI, worldFile );
+        World world(debug, aiType, worldFile);
         int score = world.run();
         cout << "The agent scored: " << score << endl; // temporary use
 //        if ( outputFile == "" )
