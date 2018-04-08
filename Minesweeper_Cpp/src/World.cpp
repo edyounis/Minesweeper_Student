@@ -18,16 +18,13 @@ using namespace std;
 // =				Constructor and Destructor
 // ===============================================================
 
-World::World( bool _debug, bool _randomAI, bool _manualAI, string filename )
+World::World(bool _debug, string aiType, string filename)
 {
-
     // Operation Flags
-    debug        = _debug;
-    manualAI     = _manualAI;
+    debug = _debug;
 
     // World Initialization
-    // if ture: file provided
-    // if false: file not provided, board with default size and random feature
+    // True for file provided; false for file not provided, board with default size and random feature
     if ( !filename.empty() )
     {
         //cout<< "open file" << endl;  debug use
@@ -43,39 +40,38 @@ World::World( bool _debug, bool _randomAI, bool _manualAI, string filename )
         for ( int index = 0; index < colDimension; ++index )
             board[index] = new Tile[rowDimension];
 
-
         addFeatures ( file );
         file.close();
     }
     else
     {
-        mineNums        = 10;
+        totalMines        = 10;
         colDimension    = 9; // temporary use
         rowDimension    = 9;
         board = new Tile*[colDimension];
         for ( int index = 0; index < colDimension; ++index )
             board[index] = new Tile[rowDimension];
 
-
         lastAction   = genFirstAxis();
         agentX       = lastAction.x;
         agentY       = lastAction.y;
-
 
         addFeatures();
     }
 
     // Agent Initialization
     score      = 0;
-    countCover = rowDimension * colDimension;
-    flagLeft   = mineNums;  // temporary use
+    coveredTiles = rowDimension * colDimension - 1;
+    flagLeft   = totalMines;  // temporary use
 
-    if ( _randomAI )
-        agent = new RandomAI( rowDimension, colDimension, mineNums, agentX, agentY );
-    else if ( _manualAI )
-        agent = new ManualAI( rowDimension, colDimension, mineNums, agentX, agentY );
+    if (aiType == "randomAI")
+        agent = new RandomAI( rowDimension, colDimension, totalMines, agentX, agentY );
+
+    else if (aiType == "manualAI")
+        agent = new ManualAI( rowDimension, colDimension, totalMines, agentX, agentY );
+
     else
-        agent = new MyAI( rowDimension, colDimension, mineNums, agentX, agentY );
+        agent = new MyAI( rowDimension, colDimension, totalMines, agentX, agentY );
 
 }
 
@@ -92,14 +88,15 @@ World::~World() {
 
 int World::run()
 {
-    int flagScore = 0;
-    while ( score >= -1000 )
+    int perceptNumber;
+    bool gameOver = false;
+    while ( !gameOver )
     {
-        if ( debug || manualAI )
+        if ( debug || dynamic_cast<ManualAI*>(agent) )
         {
             printWorldInfo();
 
-            if ( !manualAI )
+            if ( !dynamic_cast<ManualAI*>(agent) )
             {
                 // Pause the game, only if manualAI isn't on
                 // because manualAI pauses for us
@@ -108,58 +105,14 @@ int World::run()
             }
         }
 
-        // Get the move
-        lastAction = agent->getAction( board[agentX][agentY].neighbour );
-        agentX       = lastAction.x;
-        agentY       = lastAction.y;
+        if (lastAction.action == Agent::UNCOVER)
+            perceptNumber = board[agentX][agentY].number;
+        else
+            perceptNumber = -1;
+        lastAction = agent->getAction( perceptNumber );
 
         // Make the move
-//        --score;
-        switch ( lastAction.action )
-        {
-            case Agent::LEAVE:
-                if (countCover == mineNums)
-                    score += 1000; // temporary use
-                uncoverAll();
-                score += flagScore;
-                return score;
-            case Agent::UNCOVER:
-                if (board[agentX][agentY].mine)     // invalid tile
-                {
-                    score -= 1000;
-                    uncoverAll();
-                    return score;
-                }
-
-                else if (!board[agentX][agentY].uncovered)
-                {
-                    board[agentX][agentY].uncovered = true; // warning for known tile to be uncovered again?
-                    ++score;
-                    --countCover;
-                }
-
-                break;
-            case Agent::FLAG:
-                if (flagLeft)
-                {
-                    board[agentX][agentY].flag = true;
-                    --flagLeft;
-                    if (board[agentX][agentY].mine)
-                        ++flagScore;
-                    else
-                        --flagScore;
-                    break;
-                }
-
-            case Agent::UNFLAG:
-                board[agentX][agentY].flag = false;
-                ++flagLeft;
-                if (board[agentX][agentY].mine)
-                    --flagScore;
-                else
-                    ++flagScore;
-                break;
-        }
+        gameOver = doMove(lastAction);
     }
 
     return score;
@@ -198,7 +151,7 @@ void World::addFeatures( std::ifstream &file )
             if (mine)
             {
                 board[c][r].mine = mine;
-                ++mineNums;
+                ++totalMines;
             }
         }
     }
@@ -228,10 +181,10 @@ Agent::Action World::genFirstAxis(  )
 }
 
 void World::addMine(    )
-// Generate mine: mineNums times, in bound, no mine before -> [mc][mr]mine = true,
+// Generate mine: totalMines times, in bound, no mine before -> [mc][mr]mine = true,
 // not adding mine around and on the first move uncover tile
 {
-    for (int m = 0; m < mineNums; ++m){
+    for (int m = 0; m < totalMines; ++m){
         int mc = randomInt( colDimension );
         int mr = randomInt( rowDimension );
         while ( !isInBounds( mc, mr ) || board[mc][mr].mine || ((agentX - 2 < mc && mc < agentX + 2) && (agentY - 2 < mr && mr < agentY + 2)) )
@@ -267,7 +220,7 @@ void World::addNeighbour( int c, int r)
         int nc = c + i[0];
         int nr = r + i[1];
         if ( isInBounds( nc, nr ) && board[nc][nr].mine ){
-            board[c][r].neighbour++;
+            board[c][r].number++;
         }
     }
 }
@@ -278,9 +231,66 @@ void World::uncoverAll() {
         for ( int r = 0; r < rowDimension; ++r )
             board[c][r].uncovered = true;
     }
+    if ( debug || dynamic_cast<ManualAI*>(agent) )
+        printWorldInfo();
+
+    // Debugging..
+    cout<<"debug:"<<endl;
     printWorldInfo();
 }
 
+bool World::doMove(Agent::Action action) {
+    --score;
+    agentX       = lastAction.x;
+    agentY       = lastAction.y;
+    switch ( lastAction.action )
+    {
+        case Agent::LEAVE:
+            if (coveredTiles == totalMines)
+                score += WIN_BONUS; // temporary use
+            uncoverAll();
+            score += correctFlags;
+            return true;
+        case Agent::UNCOVER:
+            if (board[agentX][agentY].mine)     // invalid tile
+            {
+                score -= LOSS_PENALTY;
+                score += correctFlags;
+                uncoverAll();
+                return true;
+            }
+
+            else if (!board[agentX][agentY].uncovered)
+            {
+                board[agentX][agentY].uncovered = true; // warning for known tile to be uncovered again?
+                ++score;
+                --coveredTiles;
+            }
+
+            break;
+        case Agent::FLAG:
+            if (flagLeft)
+            {
+                board[agentX][agentY].flag = true;
+                --flagLeft;
+                if (board[agentX][agentY].mine)
+                    correctFlags += FLAG_BONUS;
+                else
+                    correctFlags += FLAG_PENALTY;
+                break;
+            }
+
+        case Agent::UNFLAG:
+            board[agentX][agentY].flag = false;
+            ++flagLeft;
+            if (board[agentX][agentY].mine)
+                correctFlags += FLAG_PENALTY;
+            else
+                correctFlags += FLAG_BONUS;;
+            break;
+    }
+    return false;
+}
 
 bool World::isInBounds ( int c, int r )
 {
@@ -299,17 +309,22 @@ void World::printWorldInfo(     )
 
 void World::printBoardInfo(     )
 {
-    cout << " ";
-    for (int c = 0; c < colDimension; ++c)
-        cout << setw(8) << c;
-    cout << endl;
+    cout << "---------------- Game Board ------------------\n" << endl;
     for ( int r = rowDimension-1; r >= 0; --r )
     {
-        cout << r;
+        cout << r << setw(4) << '|';
         for ( int c = 0; c < colDimension; ++c )
             printTileInfo ( c, r );
         cout << endl << endl;
     }
+
+    cout << "     ";
+    for (int c = 0; c < colDimension; ++c)
+        cout << setw(8) << "-" ;
+    cout << endl << "     ";
+    for (int c = 0; c < colDimension; ++c)
+        cout << setw(8) << c ;
+    cout << endl;
 }
 
 void World::printTileInfo( int c, int r )
@@ -322,7 +337,7 @@ void World::printTileInfo( int c, int r )
             tileString.append("*");
         else
         {
-            tileString.append(to_string(board[c][r].neighbour));
+            tileString.append(to_string(board[c][r].number));
 
         }
     else if ( board[c][r].flag )
@@ -335,9 +350,11 @@ void World::printTileInfo( int c, int r )
 
 void World::printAgentInfo()
 {
+    cout << "\n------------------ Percepts ------------------ " << endl;
     cout << "Score: "       << score    << endl;
-    cout << "The agent has " << flagLeft << " flag remaining" << endl;
-    cout << "The agent has " << countCover << " tile to uncover" << endl;
+    cout << "Tiles Covered: " << coveredTiles;
+    cout << " Flags Left: " << flagLeft << endl;
+
 
     printActionInfo ();
 }
@@ -375,6 +392,9 @@ int World::randomInt ( int limit )
 {
     return rand() % limit;
 }
+
+
+
 
 
 

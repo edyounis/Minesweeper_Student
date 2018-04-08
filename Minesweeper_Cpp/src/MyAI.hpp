@@ -9,6 +9,7 @@
 #include <iostream> // temporary use
 #include <vector>
 #include <map>
+#include <set>
 #include <algorithm>
 
 using namespace std;
@@ -26,16 +27,26 @@ public:
     // ======================================================================
 
     bool firstMove = true;
-    bool genDanger = false;
-    vector<pair<int, int>> next_move;
-    vector<pair<int, int>> known;
-    vector<pair<int, int>> flag;
+    bool end  = false;
+    Action action  = {LEAVE, -1, -1};
+    set<pair<int, int>>     next_uncover;
+    set<pair<int, int>>     uncovered;
+    set<pair<int, int>>     next_flag;
+    set<pair<int, int>>     marked;
+    set<pair<int, int>>     known;
     map<pair<int, int>, int> danger;
-    Action action = {LEAVE, -1, -1};
 
-    bool isInBounds ( int c, int r);
-    vector<pair<int, int>>  getNeighbour(int x, int y);
-    void                    genNext( int x, int y, vector<pair<int, int>>& next);
+
+    bool                    isInBounds    ( int c, int r );
+    set<pair<int, int>>     getNeighbour  ( int x, int y );
+    void                    genNext       ( int x, int y,
+                                            set<pair<int, int>> &add,
+                                            set<pair<int, int>> check );
+    void                    clearDanger   ( int x, int y );
+    void                    genAction     ( int x, int y, Action_type act,
+                                            set<pair<int, int>>& next,
+                                            set<pair<int, int>>& record );
+    void                    clearNext        ( Action_type act );
 
     // ======================================================================
     // YOUR CODE ENDS

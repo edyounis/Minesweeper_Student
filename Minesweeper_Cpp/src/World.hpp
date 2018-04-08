@@ -23,15 +23,9 @@
 class World{
 
 public:
-
-    // Constructor
-    World   ( bool debug = false, bool randomAI = false, bool manualAI = false, std::string filename = "" );
-
-    // Destructor
-    ~World  (  );
-
-    // Engine function
-    int run (  );
+    World(bool debug, string aiType, string filename);      // Constructor
+    ~World  (  );                                           // Destructor
+    int run (  );                                           // Engine function
 
 private:
     // Tile structure
@@ -39,38 +33,44 @@ private:
         bool mine       = false; // has Bomb or nor
         bool uncovered  = false; // uncovered or nor
         bool flag       = false; // flag marker
-        int  neighbour  = 0;     // records number of bombs around
+        int  number     = 0;     // records number of bombs around
     };
 
     // Operation Variables
-    bool 	debug;			// If true, displays board info after every move
-    bool	manualAI;		// If true, alters the behavior of debug for flow purposes
+    bool 	debug;			    // If true, displays board info after every move
 
     // Agent Variables
-    Agent* 	agent;			// The agent
-    int 	score;			// The agent's score
-    int     countCover;
-    int     flagLeft;
-    int	    agentX;			// The column where the agent is located ( x-coord = col-coord )
-    int	    agentY;			// The row where the agent is located ( y-coord = row-coord )
-
+    Agent* 	agent;			    // The agent
+    int 	score;			    // The agent's score
+    int     flagLeft;           // flag remaining
+    int	    agentX;			    // The column where the agent is located ( x-coord = col-coord )
+    int	    agentY;			    // The row where the agent is located ( y-coord = row-coord )
+    int     coveredTiles;       // For faster score calculation and
+    int     correctFlags;       // checking game-terminating conditions.
     Agent::Action	lastAction;	// The last action the agent made
 
     // Board Variables
-    int	colDimension;	// The number of columns the game board has
-    int	rowDimension;	// The number of rows the game board has
-    Tile**	board;			// The game board
-    int     mineNums;       // Number of mines the game board has
+    int	    colDimension;	    // The number of columns the game board has
+    int	    rowDimension;	    // The number of rows the game board has
+    Tile**	board;			    // The game board
+    int     totalMines;         // Number of mines the game board has
+
+    // World Variables
+    const int WIN_BONUS = 100;
+    const int LOSS_PENALTY = -100;
+    const int FLAG_BONUS = 2;
+    const int FLAG_PENALTY = -2;
 
     // World Management functions
-    void 	        addFeatures	    (   );      // add random features to the board
+    void 	        addFeatures	    (   );                  // add random features to the board
     void	        addFeatures ( std::ifstream &file );	// add specified features according the file to the board
-    void 	        addMine 		(   );      // add mine to game board
-    void            addMineCount    (   );      // adding mine counter according to neighbour
-    void            addNeighbour    ( int c, int r ); // helper function for addMineCount
-    void            uncoverAll      (   );
-    Agent::Action   genFirstAxis    (   );      // generate first move axis
-    bool            isInBounds      ( int c, int r );  // check bound
+    Agent::Action   genFirstAxis    (   );                  // generate first move axis
+    void 	        addMine 		(   );                  // add mine to game board
+    void            addMineCount    (   );                  // adding mine counter according to neighbour
+    void            addNeighbour    ( int c, int r );       // helper function for addMineCount
+    void            uncoverAll      (   );                  //
+    bool            doMove          ( Agent::Action action );//
+    bool            isInBounds      ( int c, int r );       // check bound
 
     // World printing functions
     void	        printWorldInfo	(   );
@@ -80,7 +80,7 @@ private:
     void	        printActionInfo	(   );
 
     // Helper Functions
-    int	        randomInt	( int limit ); // Randomly generate a int in the range [0, limit)
+    int	            randomInt	( int limit );              // Randomly generate a int in the range [0, limit)
 
 };
 
