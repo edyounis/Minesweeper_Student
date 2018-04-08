@@ -351,7 +351,7 @@ void World::printTileInfo( int c, int r )
 void World::printAgentInfo()
 {
     cout << "\n------------------ Percepts ------------------ " << endl;
-    cout << "Score: "       << score    << endl;
+    //cout << "Score: "       << score    << endl;
     cout << "Tiles Covered: " << coveredTiles;
     cout << " Flags Left: " << flagLeft << endl;
 
