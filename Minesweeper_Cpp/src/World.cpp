@@ -34,14 +34,17 @@ World::World(bool _debug, string aiType, string filename)
 
         // read file
         file >> colDimension >> rowDimension;
+
         if (file.fail())
             throw exception();
         board = new Tile*[colDimension];
         for ( int index = 0; index < colDimension; ++index )
             board[index] = new Tile[rowDimension];
 
+        file >> agentX >> agentY;
         addFeatures ( file );
         file.close();
+        lastAction = genFirstAxis(agentX, agentY);
     }
     else
     {
@@ -156,8 +159,8 @@ void World::addFeatures( std::ifstream &file )
         }
     }
 
-
     addMineCount();
+
     // printBoardInfo();  debug use
 }
 
@@ -176,9 +179,22 @@ Agent::Action World::genFirstAxis(  )
     }
     board[fc][fr].uncovered = true;
 
-    Agent::Action firstMove = {Agent::UNCOVER, (int) fc , (int )fr};
-    return firstMove;
+    return {Agent::UNCOVER, (int) fc , (int )fr};
 }
+
+Agent::Action World::genFirstAxis(int c, int r) {
+
+    try{
+        if (!isInBounds(c, r) || board[c][r].mine || board[c][r].number)
+            throw "[ERROR] First move coordinates are invalid.";
+    }catch (const char* msg){
+        cerr << msg << endl;
+        exit(0);
+    }
+    board[c][r].uncovered = true;
+    return {Agent::UNCOVER, c, r};
+}
+
 
 void World::addMine(    )
 // Generate mine: totalMines times, in bound, no mine before -> [mc][mr]mine = true,
@@ -234,9 +250,9 @@ void World::uncoverAll() {
     if ( debug || dynamic_cast<ManualAI*>(agent) )
         printWorldInfo();
 
-    // Debugging..
-    cout<<"debug:"<<endl;
-    printWorldInfo();
+    // Debugging...
+//    cout<<"debug:"<<endl;
+//    printWorldInfo();
 }
 
 bool World::doMove(Agent::Action action) {
@@ -351,6 +367,7 @@ void World::printTileInfo( int c, int r )
 void World::printAgentInfo()
 {
     cout << "\n------------------ Percepts ------------------ " << endl;
+    // Debugging...
     //cout << "Score: "       << score    << endl;
     cout << "Tiles Covered: " << coveredTiles;
     cout << " Flags Left: " << flagLeft << endl;
