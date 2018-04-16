@@ -16,6 +16,7 @@ MyAI::MyAI ( int _rowDimension, int _colDimension, int _totalMines, int _agentX,
     agentY       = _agentY;
 
     uncovered = {{agentX, agentY}};
+    known     = {{agentX, agentY}};
     // ======================================================================
     // YOUR CODE ENDS
     // ======================================================================
@@ -99,13 +100,6 @@ Agent::Action MyAI::getAction( int number )
                         next_uncover.emplace(i.first, i.second);
                 }
             }
-
-            if (!next_uncover.empty())
-            {
-                auto tile = *next_uncover.begin();
-                genAction(tile.first, tile.second, UNCOVER, next_uncover, known);
-            }
-
         }
 
         if(!next_flag.empty())                                                   // Flag tiles
@@ -113,13 +107,34 @@ Agent::Action MyAI::getAction( int number )
             auto tile = *next_flag.begin();
             genAction(tile.first, tile.second, FLAG, next_flag, marked);
         }
+        else if (!next_uncover.empty())                                         // Uncover tiles
+        {
+            auto tile = *next_uncover.begin();
+            genAction(tile.first, tile.second, UNCOVER, next_uncover, known);
+        }
+        else                                                                    // Pattern generate
+        {
+            pattern(1, next_uncover);
+            pattern(2, next_flag);
+            if (!next_uncover.empty())                                                  // Uncover tiles
+            {
+                auto tile = *next_uncover.begin();
+                genAction(tile.first, tile.second, UNCOVER, next_uncover, known);
+
+            }
+            else if(!next_flag.empty())                                                   // Flag tiles
+            {
+                auto tile = *next_flag.begin();
+                genAction(tile.first, tile.second, FLAG, next_flag, marked);
+            }
+        }
     }
+
 
     if (next_uncover.empty() && next_flag.empty())                              // No action: no more flag and uncover
         action.action = LEAVE;
     else
-        clearNext(action.action);
-
+        clearNext(action.action);                                               // remove implemented tiles
     return action;
     // ======================================================================
     // YOUR CODE ENDS
@@ -181,6 +196,57 @@ void MyAI::clearNext(Agent::Action_type act) {
     else if (act == UNCOVER)
         next_uncover.erase(next_uncover.begin());
 
+}
+
+void MyAI::pattern(int num, set<pair<int, int>>& next) {
+    for (auto p: danger)
+    {
+        if (p.second == 1)      // find 1
+        {
+            set<pair<int, int>> edg;
+            genNext(p.first.first, p.first.second, edg, known);
+            if (edg.size() == 2)    // 1 at edg
+            {
+                set<pair<int, int>> neighbour;
+                genNext(p.first.first, p.first.second, neighbour, {});
+
+                for (auto n: neighbour)
+                {
+                    if ( danger.count(n) && danger.at(n) == num &&    // adjacent of p = 1, vertical
+                         ( p.first.first == n.first || p.first.second == n.second) ) // or horizontal
+                    {
+                        set<pair<int, int>> n_neighbour;
+                        genNext(n.first, n.second, n_neighbour, known);
+                        if (n_neighbour.size()==3)      // ??unexplored 3 tiles from adjacent of p = 1
+                        {
+                            auto it = n_neighbour.begin();
+                            if  ( (*it).second == (*(++it)).second && (*it).second == (*(it)).second  )
+                            {
+                                for (auto item: n_neighbour)
+                                {
+                                    if (item.first != p.first.first && item.first != n.first) // find the third tile
+                                    {
+                                        next.emplace(item);
+                                    }
+                                }
+
+                            }
+                            else if ( (*it).first == (*(++it)).first && (*it).first == (*(it)).first  )
+                            {
+                                for (auto item: n_neighbour)
+                                {
+                                    if (item.second != p.first.second && item.second != n.second) // find the third tile
+                                        next.emplace(item);
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+    }
 }
 
 
