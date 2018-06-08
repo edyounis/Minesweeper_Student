@@ -1,9 +1,26 @@
+// ======================================================================
+// FILE:        ManualAI.hpp
 //
-// Created by Jian  on 3/4/18.
+// AUTHOR:      Jian Li
 //
+// DESCRIPTION: This file contains the manual agent class, which
+//              implements the agent interface. The ManualAI will allow
+//              you to play the game as an omniscient agent. This will
+//              allow you to get a feel for the game before starting to
+//              code your agent.
+//
+// NOTES:       - The 'Get Input' part of the code will ignore all info
+//                after the first letter, as well as, all whitespace
+//                before the first letter.
+//
+//              - The 'Print Command Menu' part of the code states that
+//                'L' will return the LEAVE action.
+//
+//              - Don't make changes to this file.
+// ======================================================================
 
-#ifndef MINE_SWEEPER_CPP_SHELL_MANUALAL_HPP
-#define MINE_SWEEPER_CPP_SHELL_MANUALAL_HPP
+#ifndef MINE_SWEEPER_CPP_SHELL_MANUALAI_HPP
+#define MINE_SWEEPER_CPP_SHELL_MANUALAI_HPP
 
 #include "Agent.hpp"
 #include<iostream>
@@ -33,6 +50,7 @@ public:
         std::cout << "Enter a action:  ";
         while (true)
         {
+
             std::cin >> input_action;
             std::cin.ignore(9999, '\n');
 
@@ -65,24 +83,26 @@ public:
         if (new_action != LEAVE)
         {
             std::cout << "Enter X: ";
-            while (!(std::cin >> input_x) || input_x < 0 || input_x > rowDimension)
+            while (!(std::cin >> input_x) || !std::cin.good() || input_x < 1 || input_x > rowDimension)
             {
-                std::cout << "Invalid coordinates specified, please enter again: ";
+                std::cout << "Invalid X coordinate specified, please enter again: ";
                 std::cin.clear();
-                std::cin.ignore(INT_MAX, '\n');
+                std::cin.ignore(INT_MAX,'\n');
             }
+            std::cin.ignore(INT_MAX,'\n');
             std::cout << "Enter Y: ";
-            while (!(std::cin >> input_y) || input_y < 0 || input_y > colDimension)
+            while (!(std::cin >> input_y) || input_y < 1 || input_y > colDimension)
             {
-                std::cout << "Invalid coordinates specified, please enter again: ";
+                std::cout << "Invalid Y coordinate specified, please enter again: ";
                 std::cin.clear();
-                std::cin.ignore(INT_MAX, '\n');
+                std::cin.ignore(INT_MAX,'\n');
             }
+            std::cin.ignore(INT_MAX,'\n');
         }
 
-        return {new_action, input_x, input_y};
+        return {new_action, input_x - 1, input_y - 1};
     };
 };
 
 
-#endif //MINE_SWEEPER_CPP_SHELL_MANUALAL_HPP
+#endif //MINE_SWEEPER_CPP_SHELL_MANUALAI_HPP

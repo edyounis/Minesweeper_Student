@@ -1,17 +1,53 @@
-//
+// ======================================================================
 // FILE:        Main.cpp
 //
-// Created by Jian Li  on 2/19/18.
+// AUTHOR:      Jian Li
 //
-// DESCRIPTION: This file is the entry point for the program.
-// Right now, it only in charge of launching board generation
-// All tiles are set to uncover for visibility; set to false to display "."
+// DESCRIPTION: This file is the entry point for the program. The main
+//              function serves a couple purposes: (1) It is the
+//              interface with the command line. (2) It reads the files,
+//              creates the World object, and passes that all the
+//              information necessary. (3) It is in charge of outputing
+//              information.
 //
+// NOTES:       - Syntax:
+//
+//                	Minesweeper [Options] [InputFile] [OutputFile]
+//
+//                  Options:
+//						-m Use the ManualAI instead of MyAI.
+//						-r Use the RandomAI instead of MyAI.
+//                      -d Debug mode, which displays the game board
+//                         after every mode. Useless with -m.
+//                      -v Verbose mode displays world file names before
+//                         loading them.
+//                      -f Depending on the InputFile format supplied,
+//                         this operand will trigger program
+//                         1) Treats the InputFile as a folder containing many worlds.
+//                         The program will then construct a world for every valid world file found.
+//                         The program to display total score instead of a single score.
+//                         The InputFile operand must be specified with this option
+//                         2) Threats the inputFile as a file.
+//                         The program will then construct a world for a single valid world file found.
+//                         The program to display a single score.
+//
+//                  InputFile: A path to a valid Minesweeper File, or
+//                             folder with -f.
+//
+//                  OutputFile: A path to a file where the results will
+//                              be written. This is optional.
+//
+//              - If -m and -r are turned on, -m will be turned off.
+//
+//              - Don't make changes to this file.
+// ======================================================================
 
 #include <iostream>
 #include <dirent.h>
 #include <cmath>
 #include "World.hpp"
+#include <sys/stat.h>
+
 
 using namespace std;
 
@@ -24,7 +60,10 @@ int main( int argc, char *argv[] )
     if ( argc == 1 ){
         World world(false, std::string(), std::string());
         int score = world.run();
-        cout << "Your agent scored: " << score << endl;
+        if (score)
+            cout << "WORLD COMPLETE" << endl;
+        else
+            cout <<  "WORLD INCOMPLETE" << endl;
         return 0;
     }
 
@@ -43,44 +82,17 @@ int main( int argc, char *argv[] )
         // Parse Options
         for (int index = 1; index < firstToken.size(); ++index)
         {
-//            switch (firstToken[index])
-//            {
-//                case '-':
-//                    break;
-//
-//                case 'f':
-//                case 'F':
-//                    folder = true;
-//                    break;
-//
-//                case 'v':
-//                case 'V':
-//                    verbose = true;
-//                    break;
-//
-//                case 'r':
-//                case 'R':
-//                    randomAI = true;
-//                    break;
-//
-//                case 'm':
-//                case 'M':
-//                    manualAI = true;
-//                    break;
-//
-//                case 'd':
-//                case 'D':
-//                    debug = true;
-//                    break;
-//
-//                default:
-//                    return 0;
-//            }
             // If both AI's on, turn one off and let the user know.
             if ( firstToken[index] == '-' )
                     continue;
             if ( firstToken[index] == 'f' || firstToken[index] =='F' )
-                folder = true;
+            {
+                struct stat path_stat;
+                worldFile = argv[2];
+                stat ( worldFile.c_str(), &path_stat );
+                folder = S_ISDIR ( path_stat.st_mode );
+            }
+
             if ( firstToken[index] == 'v' || firstToken[index] =='V' )
                 verbose = true;
             if ( firstToken[index] == 'r' || firstToken[index] == 'R' )
@@ -102,17 +114,9 @@ int main( int argc, char *argv[] )
         }
 
 
-        if ( argc >= 3 )
-            worldFile = argv[2];
         if ( argc >= 4 )
             outputFile = argv[3];
-    }
-    else
-    {
-        if ( argc >= 2 )
-            worldFile = argv[1];
-        if ( argc >= 3 )
-            outputFile = argv[2];
+
     }
 
     // no input folder for -f option turning on
@@ -122,9 +126,14 @@ int main( int argc, char *argv[] )
             cout << "[WARNING] No folder specified; running on a random world." << endl;
         World world(debug, aiType, std::string());
         int score = world.run();
-        cout << "The agent scored: " << score << endl;
+        if (score)
+            cout << "WORLD COMPLETE" << endl;
+        else
+            cout <<  "WORLD INCOMPLETE" << endl;
         return 0;
     }
+
+
 
     // no input file or invalid file for -f option turning on
     if ( folder )
@@ -138,15 +147,15 @@ int main( int argc, char *argv[] )
 
         struct dirent *ent;
 
-        int numOfScores = 0;
         double sumOfScores = 0;
-        double sumOfScoresSquared = 0;
+        int easy = 0;
+        int medium = 0;
+        int expert = 0;
 
         while ((ent = readdir(dir)) != NULL)
         {
             if (ent->d_name[0] == '.')
                 continue;
-
             if (verbose)
                 cout << "Running world: " << ent->d_name << endl;
 
@@ -156,29 +165,45 @@ int main( int argc, char *argv[] )
             try {
                 World world(debug, aiType, individualWorldFile);
                 score = world.run();
+                if (score == 3)
+                    ++expert;
+                else if (score == 2)
+                    ++medium;
+                else if (score == 1)
+                    ++easy;
             }
             catch (...) {
-                numOfScores = 0;
                 sumOfScores = 0;
-                sumOfScoresSquared = 0;
                 break;
             }
 
-            numOfScores += 1;
             sumOfScores += score;
-            sumOfScoresSquared += score * score;
         }
 
         closedir(dir);
 
-        double avg = (float)sumOfScores / (float)numOfScores;
-        double std_dev = sqrt ( (sumOfScoresSquared - ((sumOfScores*sumOfScores) / (float)numOfScores) ) / (float)numOfScores );
 
-        cout << "The agent's average score: " << avg << endl;  // temporary use
-        cout << "The agent's standard deviation: " << std_dev << endl;
+        if ( outputFile == "" )
+        {
 
+            cout << "easy: " << easy << endl;
+            cout << "medium: "  << medium << endl;
+            cout << "expert: " << expert << endl;
+            cout << "score: " << sumOfScores << endl;
+        }
+        else
+        {
+            ofstream file;
+            file.open( outputFile );
+            file << "easy: "  << easy << endl;
+            file << "medium: " << medium << endl;
+            file << "expert: " << expert << endl;
+            file << "score: " << sumOfScores << endl;
+            file.close();
+        }
         return 0;
     }
+
 
     try
     {
@@ -187,21 +212,27 @@ int main( int argc, char *argv[] )
 
         World world(debug, aiType, worldFile);
         int score = world.run();
-        cout << "The agent scored: " << score << endl; // temporary use
-//        if ( outputFile == "" )
-//        {
-//            cout << "The agent scored: "  << endl;//?
-//        }
-//        else
-//        {
-//            ofstream file;
-//            file.open ( outputFile );
-//            //file << "SCORE: " << score << endl;
-//            file.close();
-//        }
+        if ( outputFile == "" )
+        {
+            if (score)
+                cout << "WORLD COMPLETE" << endl;
+            else
+                cout <<  "WORLD INCOMPLETE" << endl;
+        }
+        else
+        {
+            ofstream file;
+            file.open ( outputFile );
+            if (score)
+                file << "WORLD COMPLETE" << endl;
+            else
+                file <<  "WORLD INCOMPLETE"  << endl;
+            file.close();
+        }
     }
     catch ( const std::exception& e )
     {
         cout << "[ERROR] Failure to open file." << endl;
     }
+    return 0;
 }

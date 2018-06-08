@@ -1,6 +1,21 @@
+// ======================================================================
+// FILE:        MyAI.hpp
 //
-// Created by Jian  on 3/5/18.
+// AUTHOR:      Jian Li
 //
+// DESCRIPTION: This file contains your agent class, which you will
+//              implement. You are responsible for implementing the
+//              'getAction' function and any helper methods you feel you
+//              need.
+//
+// NOTES:       - If you are having trouble understanding how the shell
+//                works, look at the other parts of the code, as well as
+//                the documentation.
+//
+//              - You are only allowed to make changes to this portion of
+//                the code. Any changes to other portions of the code will
+//                be lost when the tournament runs your code.
+// ======================================================================
 
 #ifndef MINE_SWEEPER_CPP_SHELL_MYAI_HPP
 #define MINE_SWEEPER_CPP_SHELL_MYAI_HPP
@@ -26,27 +41,7 @@ public:
     // YOUR CODE BEGINS
     // ======================================================================
 
-    bool firstMove = true;
-    bool end  = false;
-    Action action  = {LEAVE, -1, -1};
-    set<pair<int, int>>     next_uncover;
-    set<pair<int, int>>     uncovered;
-    set<pair<int, int>>     next_flag;
-    set<pair<int, int>>     marked;
-    set<pair<int, int>>     known;
-    map<pair<int, int>, int> danger;
 
-
-    bool                    isInBounds    ( int c, int r );
-    set<pair<int, int>>     getNeighbour  ( int x, int y );
-    void                    genNext       ( int x, int y,
-                                            set<pair<int, int>> &add,
-                                            set<pair<int, int>> check );
-    void                    clearDanger   ( int x, int y );
-    void                    genAction     ( int x, int y, Action_type act,
-                                            set<pair<int, int>>& next,
-                                            set<pair<int, int>>& record );
-    void                    clearNext        ( Action_type act );
 
     // ======================================================================
     // YOUR CODE ENDS

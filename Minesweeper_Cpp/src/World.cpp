@@ -1,13 +1,13 @@
-//
+// ======================================================================
 // FILE:        World.cpp
 //
-// Created by Jian Li  on 2/19/18.
-// Edit history: 2/21 World.cpp: default board generation, print functions, basic run engine function
-//               3/5  World.cpp: file input board generation, first move generation function, agent initialized, run engine function returning score
-//               3/7  refine first move generation function and addMine function
+// AUTHOR:      Jian Li
 //
-// DESCRIPTION: This file contains the World class, which is responsible
+// DESCRIPTION: This file contains the world class, which is responsible
 //              for everything game related.
+//
+// NOTES:       - Don't make changes to this file.
+// ======================================================================
 //
 
 #include "World.hpp"
@@ -27,13 +27,12 @@ World::World(bool _debug, string aiType, string filename)
     // True for file provided; false for file not provided, board with default size and random feature
     if ( !filename.empty() )
     {
-        //cout<< "open file" << endl;  debug use
+
         // open file
         ifstream file;
         file.open(filename);
 
-        // read file
-        file >> colDimension >> rowDimension;
+        file >> rowDimension >> colDimension;
 
         if (file.fail())
             throw exception();
@@ -41,16 +40,18 @@ World::World(bool _debug, string aiType, string filename)
         for ( int index = 0; index < colDimension; ++index )
             board[index] = new Tile[rowDimension];
 
+
         file >> agentX >> agentY;
+        lastAction = genFirstAxis(--agentX, --agentY);
         addFeatures ( file );
         file.close();
-        lastAction = genFirstAxis(agentX, agentY);
+
     }
     else
     {
         totalMines        = 10;
-        colDimension    = 9; // temporary use
-        rowDimension    = 9;
+        colDimension    = 8;
+        rowDimension    = 8;
         board = new Tile*[colDimension];
         for ( int index = 0; index < colDimension; ++index )
             board[index] = new Tile[rowDimension];
@@ -62,10 +63,28 @@ World::World(bool _debug, string aiType, string filename)
         addFeatures();
     }
 
+    maxMoves = rowDimension * colDimension * 2;
+
+    switch (colDimension)
+    {
+        case 8:
+            Bonus = 1;
+            break;
+        case 16:
+            Bonus = 2;
+            break;
+        case 30:
+            Bonus = 3;
+            break;
+        default:
+            Bonus = 1;
+            break;
+    }
+
     // Agent Initialization
     score      = 0;
     coveredTiles = rowDimension * colDimension - 1;
-    flagLeft   = totalMines;  // temporary use
+    flagLeft   = totalMines;
 
     if (aiType == "randomAI")
         agent = new RandomAI( rowDimension, colDimension, totalMines, agentX, agentY );
@@ -83,6 +102,7 @@ World::~World() {
         delete [] board[index];
 
     delete [] board;
+    //delete agent;  ???
 }
 
 // ===============================================================
@@ -93,9 +113,11 @@ int World::run()
 {
     int perceptNumber;
     bool gameOver = false;
-    while ( !gameOver )
+    int move = 0;
+
+    while ( !gameOver && move < maxMoves )
     {
-        if ( debug || dynamic_cast<ManualAI*>(agent) )
+        if ( debug || dynamic_cast<ManualAI*>(agent))
         {
             printWorldInfo();
 
@@ -115,7 +137,9 @@ int World::run()
         lastAction = agent->getAction( perceptNumber );
 
         // Make the move
-        gameOver = doMove(lastAction);
+        gameOver = doMove();
+
+        move++;
     }
 
     return score;
@@ -160,8 +184,6 @@ void World::addFeatures( std::ifstream &file )
     }
 
     addMineCount();
-
-    // printBoardInfo();  debug use
 }
 
 Agent::Action World::genFirstAxis(  )
@@ -170,8 +192,6 @@ Agent::Action World::genFirstAxis(  )
 {
     int fc = randomInt( colDimension );
     int fr = randomInt( rowDimension );
-    //while ( !isInBounds( fc, fr ) || board[fc][fr].mine || board[fc][fr].neighbour) //potentially wrong for no non_zero neighbour
-    //while ( !isInBounds( fc, fr ) || board[fc][fr].mine)
     while ( !isInBounds( fc, fr ))
     {
         fc = randomInt( colDimension );
@@ -241,7 +261,9 @@ void World::addNeighbour( int c, int r)
     }
 }
 
-void World::uncoverAll() {
+void World::uncoverAll()
+{
+
     for ( int c = 0; c < colDimension; ++c )
     {
         for ( int r = 0; r < rowDimension; ++r )
@@ -249,37 +271,30 @@ void World::uncoverAll() {
     }
     if ( debug || dynamic_cast<ManualAI*>(agent) )
         printWorldInfo();
-
-    // Debugging...
-//    cout<<"debug:"<<endl;
-//    printWorldInfo();
 }
 
-bool World::doMove(Agent::Action action) {
-    --score;
+bool World::doMove()
+{
     agentX       = lastAction.x;
     agentY       = lastAction.y;
+
     switch ( lastAction.action )
     {
         case Agent::LEAVE:
             if (coveredTiles == totalMines)
-                score += WIN_BONUS; // temporary use
+                score += Bonus;
             uncoverAll();
-            score += correctFlags;
             return true;
         case Agent::UNCOVER:
-            if (board[agentX][agentY].mine)     // invalid tile
+            if (board[agentX][agentY].mine)
             {
-                score -= LOSS_PENALTY;
-                score += correctFlags;
                 uncoverAll();
                 return true;
             }
 
             else if (!board[agentX][agentY].uncovered)
             {
-                board[agentX][agentY].uncovered = true; // warning for known tile to be uncovered again?
-                ++score;
+                board[agentX][agentY].uncovered = true;
                 --coveredTiles;
             }
 
@@ -290,21 +305,24 @@ bool World::doMove(Agent::Action action) {
                 board[agentX][agentY].flag = true;
                 --flagLeft;
                 if (board[agentX][agentY].mine)
-                    correctFlags += FLAG_BONUS;
+                    ++correctFlags;
                 else
-                    correctFlags += FLAG_PENALTY;
-                break;
+                    --correctFlags;
             }
-
+            break;
         case Agent::UNFLAG:
-            board[agentX][agentY].flag = false;
-            ++flagLeft;
-            if (board[agentX][agentY].mine)
-                correctFlags += FLAG_PENALTY;
-            else
-                correctFlags += FLAG_BONUS;;
+            if (board[agentX][agentY].flag)
+            {
+                board[agentX][agentY].flag = false;
+                ++flagLeft;
+                if (board[agentX][agentY].mine)
+                    --correctFlags;
+                else
+                    ++correctFlags;
+            }
             break;
     }
+
     return false;
 }
 
@@ -328,7 +346,7 @@ void World::printBoardInfo(     )
     cout << "---------------- Game Board ------------------\n" << endl;
     for ( int r = rowDimension-1; r >= 0; --r )
     {
-        cout << r << setw(4) << '|';
+        printf("%-4d%c",r+1,'|');
         for ( int c = 0; c < colDimension; ++c )
             printTileInfo ( c, r );
         cout << endl << endl;
@@ -339,7 +357,7 @@ void World::printBoardInfo(     )
         cout << setw(8) << "-" ;
     cout << endl << "     ";
     for (int c = 0; c < colDimension; ++c)
-        cout << setw(8) << c ;
+        cout << setw(8) << c + 1;
     cout << endl;
 }
 
@@ -357,7 +375,7 @@ void World::printTileInfo( int c, int r )
 
         }
     else if ( board[c][r].flag )
-            tileString.append("#");  // temporary use
+            tileString.append("#");
     else
         tileString.append(".");
 
@@ -367,10 +385,8 @@ void World::printTileInfo( int c, int r )
 void World::printAgentInfo()
 {
     cout << "\n------------------ Percepts ------------------ " << endl;
-    // Debugging...
-    //cout << "Score: "       << score    << endl;
     cout << "Tiles Covered: " << coveredTiles;
-    cout << " Flags Left: " << flagLeft << endl;
+    cout << " Flags Left: " << flagLeft << "    ";
 
 
     printActionInfo ();
@@ -398,7 +414,7 @@ void World::printActionInfo()
     }
 
     if (lastAction.action != Agent::LEAVE)
-        cout << " on tile " << agentX << " " << agentY << endl;
+        cout << " on tile " << agentX + 1 << " " << agentY + 1 << endl;
 }
 
 // ===============================================================
