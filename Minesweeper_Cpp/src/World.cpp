@@ -102,7 +102,6 @@ World::~World() {
         delete [] board[index];
 
     delete [] board;
-    //delete agent;  ???
 }
 
 // ===============================================================
