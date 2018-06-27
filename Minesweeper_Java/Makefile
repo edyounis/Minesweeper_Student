@@ -20,6 +20,8 @@
 
 
 compile:
+	@echo "cleaning directory.."
+	@make clean
 	@echo "compiling src.."
 	@javac -classpath ".:jars/*" -Xlint:unchecked src/*.java 
 	@echo "creating executable jar file.."
@@ -28,7 +30,7 @@ compile:
 	@mv src/*.class bin
 	@mv mine.jar bin
 	@cp -r jars bin
-	@echo 'Complete.'
+	@echo 'complete.'
 
 submission:
 	@echo "cleaning..."; make clean
@@ -45,4 +47,4 @@ submission:
 	@echo "Done."
 
 clean:
-	rm -rf bin *.zip
+	rm -rf bin doc *.zip

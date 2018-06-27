@@ -221,7 +221,6 @@ public class World {
 			// Ask agent for its action
 			actionObj = this.agent.getAction(this.perceptNumber);
 			System.out.println(actionObj);
-			System.out.println("about to crash");
 			// Check the (x,y) coordinates are valid
 			if (!this.isInBounds(actionObj.x, actionObj.y)) {
 				System.out.println("out of bound coordinates: (" + actionObj.x + "," + actionObj.y + "). Exiting.");
@@ -629,7 +628,7 @@ public class World {
 		Tile tile = this.board[row][col];
 		if (tile.covered) {
 			if (tile.flagged) {
-				System.out.print("F");
+				System.out.print("#");
 			} else {
 				System.out.print(".");
 			}
@@ -663,6 +662,7 @@ public class World {
 	private void printActionInfo() {
 		System.out.println("---------------- Available Actions ----------------");
 		System.out.println("L: leave game   U: uncover tile   F: flag   N: unflag ");
+		System.out.println("Enter Action: ");
 	}
 	
 	private boolean isInBounds(int x, int y) {
