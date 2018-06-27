@@ -15,7 +15,7 @@ public class ManualAI extends AI {
 			if (actionStr.equals("L")) {
 				return new Action(Action.ACTION.LEAVE,1,1);
 			} else if (actionStr.equals("U") || actionStr.equals("F") || actionStr.equals("N")) {
-				System.out.print("Enter (x,y) coordinate: ");
+				System.out.print("Enter (x,y) coordinate (w/out the parentheses): ");
 				coordStr = scanner.nextLine();
 				String[] coords = coordStr.split(",");
 				try {

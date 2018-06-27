@@ -46,7 +46,7 @@ public class MyAI extends AI {
 	// ################## Implement getAction(), (required) #####################
 	public Action getAction(int number) {
 
-		return null;
+		return new Action(ACTION.LEAVE);
 	}
 
 	// ################### Helper Functions Go Here (optional) ##################

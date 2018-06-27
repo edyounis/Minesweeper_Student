@@ -7,7 +7,7 @@ public class Main {
 	public static void main(String[] args) throws Exception {
 		String aiType = "myai";
 		boolean debug_mode = false;
-	
+        boolean verbose_mode = false;
 		World world = null;
 		// ------------------------- Parse Options ---------------------------
         Options options = new Options();
@@ -22,7 +22,6 @@ public class Main {
         file.setArgs(2);
         options.addOption(file);
 
-
         Option manualMode = new Option("m", "manual", false, "manual mode");
         manualMode.setRequired(false);
         options.addOption(manualMode);
@@ -33,7 +32,7 @@ public class Main {
         
         Option verbose = new Option("v", "verbose", false, "verbose mode");
         verbose.setRequired(false);
-        options.addOption(help);
+        options.addOption(verbose);
         
         Option debug = new Option("d", "debug", false, "debug mode");
         debug.setRequired(false);
@@ -55,6 +54,7 @@ public class Main {
         	formatter.printHelp("Usage", options);
         	System.exit(0);
         }
+
         
         // first arg is filename, second is output file name (if provided)
         String[] files = cmd.getOptionValues("file");
@@ -78,8 +78,12 @@ public class Main {
         if (cmd.hasOption("debug")) {
         	debug_mode = true;
         }
-        
-		// Create the world
+
+        if (cmd.hasOption("verbose")) {
+            verbose_mode = true;
+        }
+
+        // ------------------------- Create World ---------------------------
         int totalScore = 0;
         int easy_comp = 0;
         int med_comp = 0;
@@ -92,7 +96,9 @@ public class Main {
 				System.out.println("Running on Worlds in... " + filename);
 				File worldsDir = new File(filename);
 				for (File worldFile : worldsDir.listFiles()) {
-					System.out.println("Running on " + worldFile.getCanonicalPath());
+                    if (verbose_mode) {
+                        System.out.println("Running on " + worldFile.getCanonicalPath());
+                    }
                     totalWorlds++;
 					world = new World(worldFile.getCanonicalPath(), aiType, debug_mode);
 					// double score = world.run();
@@ -135,11 +141,11 @@ public class Main {
 				world.run();
 			}
 		} else {
-			System.out.print("Running on random world...");
+			System.out.println("Running on random world...");
 			world = new World(null, aiType, debug_mode);
 			world.run();
+            world.printBoardInfo();
 		}
-
 	}
 
 }
