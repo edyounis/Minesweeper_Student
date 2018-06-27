@@ -151,6 +151,10 @@ def main():
 		world = World(aiType=aiType, verbose=verbose, debug=debug)
 		score = world.run()
 		print("Your AI scored: " + str(score))
+		if score == 0:
+			print("It did not complete the world")
+		else:
+			print("Your AI completed the world")
 		
 
 if __name__ == "__main__":
