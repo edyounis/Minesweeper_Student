@@ -87,17 +87,17 @@ public:
             {
                 std::cout << "Invalid X coordinate specified, please enter again: ";
                 std::cin.clear();
-                std::cin.ignore(INT_MAX,'\n');
+                std::cin.ignore(9999,'\n');
             }
-            std::cin.ignore(INT_MAX,'\n');
+            std::cin.ignore(9999,'\n');
             std::cout << "Enter Y: ";
             while (!(std::cin >> input_y) || input_y < 1 || input_y > colDimension)
             {
                 std::cout << "Invalid Y coordinate specified, please enter again: ";
                 std::cin.clear();
-                std::cin.ignore(INT_MAX,'\n');
+                std::cin.ignore(9999,'\n');
             }
-            std::cin.ignore(INT_MAX,'\n');
+            std::cin.ignore(9999,'\n');
         }
 
         return {new_action, input_x - 1, input_y - 1};
