@@ -173,7 +173,7 @@ public class World {
 		} else if (row == 16 && col == 30 && mines == 99)  {
 			return DIFFICULTY.EXPERT;
 		} else {
-			return DIFFICULTY.NONE;
+			return DIFFICULTY.EASY;
 		}
 	}
 	
