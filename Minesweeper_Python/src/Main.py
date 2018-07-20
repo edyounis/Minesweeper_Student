@@ -115,7 +115,7 @@ def main():
 					elif score == 2:
 						scoreInt += 1
 					elif score == 3:
-						scoreExp += 3
+						scoreExp += 1
 
 					numScores += 1
 					sumScores += score
